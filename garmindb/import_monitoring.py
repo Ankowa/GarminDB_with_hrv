@@ -108,7 +108,8 @@ class GarminHrvMonitoringData(JsonFileProcessor):
         """
         logger.info("Processing hrv monitoring data")
         super().__init__(r'hrv_monitoring_\d{4}-\d{2}-\d{2}\.json', input_dir=input_dir, latest=latest, debug=debug)
-        self.garmin_db = MonitoringDb(db_params).managed_session()
+        with MonitoringDb(db_params).managed_session() as self.garmin_db:
+            self.garmin_db = self.garmin_db 
         self.conversions = {'calendarDate': self._parse_date}
 
     def _process_json(self, json_data):
