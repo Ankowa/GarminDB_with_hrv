@@ -35,7 +35,8 @@ class Download():
     garmin_connect_sleep_daily_url = garmin_connect_wellness_url + "/dailySleepData"
     garmin_connect_rhr = "/userstats-service/wellness/daily"
     garmin_connect_weight_url = "/weight-service/weight/dateRange"
-    garmin_connect_hrv_url = "/hrv-service/hrv/{start}"
+    garmin_connect_hrv_monitoring_url = "/hrv-service/hrv/{start}"
+    garmin_connect_hrv_url = "/hrv-service/hrv/daily/{start}/{end}"
 
     garmin_connect_activity_search_url = "/activitylist-service/activities/search/activities"
     garmin_connect_activity_service_url = "/activity-service/activity"
@@ -208,10 +209,19 @@ class Download():
         date_str = day.strftime('%Y-%m-%d')
         json_filename = f'{directory}/hrv_{date_str}'
         try:
-            self.save_json_to_file(json_filename, self.garth.connectapi(self.garmin_connect_hrv_url.format(start=date_str)), overwite)
+            self.save_json_to_file(json_filename, self.garth.connectapi(self.garmin_connect_hrv_url.format(start=date_str, end=date_str)), overwite)
         except GarthHTTPError as e:
             root_logger.error("Exception getting daily summary: %s", e)
-
+            
+    def __get_hrv_monitoring_day(self, directory, day, overwite=False):
+        root_logger.info("Checking hrv monitoring: %s overwite %r", day, overwite)
+        date_str = day.strftime('%Y-%m-%d')
+        json_filename = f'{directory}/hrv_monitoring_{date_str}'
+        try:
+            self.save_json_to_file(json_filename, self.garth.connectapi(self.garmin_connect_hrv_monitoring_url.format(start=date_str)), overwite)
+        except GarthHTTPError as e:
+            root_logger.error("Exception getting daily summary: %s", e)
+            
     def get_weight(self, directory, date, days, overwite):
         """Download the sleep data from Garmin Connect and save to a JSON file."""
         root_logger.info("Getting weight: %s (%d)", date, days)
@@ -221,6 +231,11 @@ class Download():
         """Download the hrv data from Garmin Connect and save to a JSON file."""
         root_logger.info("Getting hrv: %s (%d)", date, days)
         self.__get_stat(self.__get_hrv_day, directory, date, days, overwite)
+        
+    def get_hrv_monitoring(self, directory, date, days, overwite):
+        """Download the hrv monitoring data from Garmin Connect and save to a JSON file."""
+        root_logger.info("Getting hrv monitoring: %s (%d)", date, days)
+        self.__get_stat(self.__get_hrv_monitoring_day, directory, date, days, overwite)
 
     def __get_activity_summaries(self, start, count):
         root_logger.info("get_activity_summaries")

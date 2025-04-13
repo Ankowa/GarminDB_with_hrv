@@ -20,13 +20,13 @@ import zipfile
 import glob
 
 from garmindb import python_version_check, log_version, format_version
-from garmindb.garmindb import GarminDb, Attributes, Sleep, Weight, RestingHeartRate, MonitoringDb, MonitoringHeartRate, ActivitiesDb, GarminSummaryDb, Hrv
+from garmindb.garmindb import GarminDb, Attributes, Sleep, Weight, RestingHeartRate, MonitoringDb, MonitoringHeartRate, ActivitiesDb, GarminSummaryDb, Hrv, MonitoringHrv
 from garmindb.summarydb import SummaryDb
 
 from garmindb import Download, Copy, Analyze
 from garmindb import FitFileProcessor, ActivityFitFileProcessor, MonitoringFitFileProcessor, SleepFitFileProcessor
 from garmindb import GarminUserSettings, GarminSocialProfile, GarminPersonalInformation, GarminWeightData, GarminSummaryData, GarminMonitoringFitData, GarminSleepFitData, \
-    GarminSleepData, GarminRhrData, GarminSettingsFitData, GarminHydrationData, GarminHrvData
+    GarminSleepData, GarminRhrData, GarminSettingsFitData, GarminHydrationData, GarminHrvData, GarminHrvMonitoringData
 from garmindb import GarminJsonSummaryData, GarminJsonDetailsData, GarminTcxData, GarminActivitiesFitData
 from garmindb import ActivityExporter
 
@@ -159,6 +159,13 @@ def download_data(overwite, latest, stats):
             download.get_hrv(hrv_dir, date, days, overwite)
             root_logger.info("Saved hrv files for %s (%d) to %s for processing", date, days, hrv_dir)
 
+    if Statistics.hrv in stats:
+        date, days = __get_date_and_days(MonitoringDb(db_params_dict), latest, MonitoringHrv, MonitoringHrv.hrv, 'hrv_monitoring')
+        if days > 0:
+            hrv_monitoring_dir = gc_config.get_hrv_monitoring_dir()
+            root_logger.info("Date range to update: %s (%d) to %s", date, days, hrv_monitoring_dir)
+            download.get_hrv_monitoring(hrv_monitoring_dir, date, days, overwite)
+
     if Statistics.rhr in stats:
         date, days = __get_date_and_days(GarminDb(db_params_dict), latest, RestingHeartRate, RestingHeartRate.resting_heart_rate, 'rhr')
         if days > 0:
@@ -202,6 +209,12 @@ def import_data(debug, latest, stats):
     if Statistics.hrv in stats:
         hrv_dir = gc_config.get_hrv_dir()
         ghd = GarminHrvData(db_params_dict, hrv_dir, latest, debug)
+        if ghd.file_count() > 0:
+            ghd.process()
+
+    if Statistics.hrv in stats:
+        hrv_monitoring_dir = gc_config.get_hrv_monitoring_dir()
+        ghd = GarminHrvMonitoringData(db_params_dict, hrv_monitoring_dir, latest, debug)
         if ghd.file_count() > 0:
             ghd.process()
 

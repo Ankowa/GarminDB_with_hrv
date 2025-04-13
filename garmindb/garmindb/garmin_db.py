@@ -210,6 +210,7 @@ class Hrv(GarminDb.Base, idbutils.DbObject):
 
     day = Column(Date, primary_key=True)
     hrv = Column(Float)
+    five_min_high_hrv = Column(Float)
 
     @classmethod
     def get_stats(cls, session, start_ts, end_ts):
@@ -217,7 +218,10 @@ class Hrv(GarminDb.Base, idbutils.DbObject):
         return {
             'hrv_avg': cls.s_get_col_avg(session, cls.hrv, start_ts, end_ts, True),
             'hrv_min': cls.s_get_col_min(session, cls.hrv, start_ts, end_ts, True),
-            'hrv_max': cls.s_get_col_max(session, cls.hrv, start_ts, end_ts)
+            'hrv_max': cls.s_get_col_max(session, cls.hrv, start_ts, end_ts),
+            'five_min_high_hrv_avg': cls.s_get_col_avg(session, cls.five_min_high_hrv, start_ts, end_ts, True),
+            'five_min_high_hrv_min': cls.s_get_col_min(session, cls.five_min_high_hrv, start_ts, end_ts, True),
+            'five_min_high_hrv_max': cls.s_get_col_max(session, cls.five_min_high_hrv, start_ts, end_ts)
         }
 
 

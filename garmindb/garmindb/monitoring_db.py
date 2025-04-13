@@ -290,3 +290,23 @@ class MonitoringPulseOx(MonitoringDb.Base, idbutils.DbObject):
             'pulse_ox_min' : cls.s_get_col_min(session, cls.pulse_ox, start_ts, end_ts, True),
             'pulse_ox_max' : cls.s_get_col_max(session, cls.pulse_ox, start_ts, end_ts),
         }
+
+class MonitoringHrv(MonitoringDb.Base, idbutils.DbObject):
+    """Class that represents a database table holding hrv data."""
+
+    __tablename__ = 'monitoring_hrv'
+
+    db = MonitoringDb
+    table_version = 1
+
+    timestamp = Column(DateTime, primary_key=True)
+    hrv = Column(Float, nullable=False)
+
+    @classmethod
+    def get_stats(cls, session, start_ts, end_ts):
+        """Return a dict of stats for table entries within the time span."""
+        return {
+            'hrv_avg' : cls.s_get_col_avg(session, cls.hrv, start_ts, end_ts, True),
+            'hrv_min' : cls.s_get_col_min(session, cls.hrv, start_ts, end_ts, True),
+            'hrv_max' : cls.s_get_col_max(session, cls.hrv, start_ts, end_ts),
+        }

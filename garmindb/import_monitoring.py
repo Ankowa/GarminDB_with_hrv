@@ -13,7 +13,7 @@ import enum
 import fitfile
 from idbutils import JsonFileProcessor, Conversions
 
-from .garmindb import GarminDb, Attributes, Weight, Sleep, SleepEvents, RestingHeartRate, DailySummary, Hrv
+from .garmindb import GarminDb, Attributes, Weight, Sleep, SleepEvents, RestingHeartRate, DailySummary, Hrv, MonitoringHrv
 from .fit_data import FitData
 
 
@@ -86,6 +86,39 @@ class GarminHrvData(JsonFileProcessor):
                 'hrv': hrv
             }
             Hrv.insert_or_update(self.garmin_db, point)
+            return 1
+        return 0
+    
+
+class GarminHrvMonitoringData(JsonFileProcessor):
+    """Class for importing JSON formatted Garmin Connect hrv monitoring data into a database."""
+
+    def __init__(self, db_params, input_dir, latest, debug):
+        """
+        Return an instance of GarminHrvMonitoringData.
+
+        Parameters:
+        ----------
+        db_params (object): configuration data for accessing the database
+        input_dir (string): directory (full path) to check for hrv monitoring data files
+        latest (Boolean): check for latest files only
+        debug (Boolean): enable debug logging
+
+        """
+        logger.info("Processing hrv monitoring data")
+        super().__init__(r'hrv_monitoring_\d{4}-\d{2}-\d{2}\.json', input_dir=input_dir, latest=latest, debug=debug)
+        self.garmin_db = GarminDb(db_params)
+        self.conversions = {'calendarDate': self._parse_date}
+
+    def _process_json(self, json_data):
+        hrv_list = json_data['hrvList']
+        if len(hrv_list) > 0:
+            hrv = hrv_list[0]
+            point = {
+                'day': json_data['calendarDate'].date(),
+                'hrv': hrv
+            }
+            MonitoringHrv.insert_or_update(self.garmin_db, point)
             return 1
         return 0
 
