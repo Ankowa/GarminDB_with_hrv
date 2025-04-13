@@ -35,7 +35,7 @@ class Download():
     garmin_connect_sleep_daily_url = garmin_connect_wellness_url + "/dailySleepData"
     garmin_connect_rhr = "/userstats-service/wellness/daily"
     garmin_connect_weight_url = "/weight-service/weight/dateRange"
-    garmin_connect_hrv_url = "/hrv-service/hrv/daily"
+    garmin_connect_hrv_url = "/hrv-service/hrv/{start}"
 
     garmin_connect_activity_search_url = "/activitylist-service/activities/search/activities"
     garmin_connect_activity_service_url = "/activity-service/activity"
@@ -206,14 +206,9 @@ class Download():
     def __get_hrv_day(self, directory, day, overwite=False):
         root_logger.info("Checking hrv: %s overwite %r", day, overwite)
         date_str = day.strftime('%Y-%m-%d')
-        params = {
-            'startDate' : date_str,
-            'endDate'   : date_str,
-            '_'         : str(conversions.dt_to_epoch_ms(conversions.date_to_dt(day)))
-        }
         json_filename = f'{directory}/hrv_{date_str}'
         try:
-            self.save_json_to_file(json_filename, self.garth.connectapi(self.garmin_connect_hrv_url, params=params), overwite)
+            self.save_json_to_file(json_filename, self.garth.connectapi(self.garmin_connect_hrv_url.format(start=date_str)), overwite)
         except GarthHTTPError as e:
             root_logger.error("Exception getting daily summary: %s", e)
 
