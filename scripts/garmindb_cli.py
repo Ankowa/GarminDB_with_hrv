@@ -330,7 +330,7 @@ def main(argv):
     stats_group.add_argument("-r", "--rhr", help="Download and/or import resting heart rate data.", dest='stats', action='append_const', const=Statistics.rhr)
     stats_group.add_argument("-s", "--sleep", help="Download and/or import sleep data.", dest='stats', action='append_const', const=Statistics.sleep)
     stats_group.add_argument("-w", "--weight", help="Download and/or import weight data.", dest='stats', action='append_const', const=Statistics.weight)
-    stats_group.add_argument("-h", "--hrv", help="Download and/or import hrv data.", dest='stats', action='append_const', const=Statistics.hrv)
+    stats_group.add_argument("--hrv", help="Download and/or import hrv data.", dest='stats', action='append_const', const=Statistics.hrv)
     modifiers_group = parser.add_argument_group('Modifiers')
     modifiers_group.add_argument("-l", "--latest", help="Only download and/or import the latest data.", action="store_true", default=False)
     modifiers_group.add_argument("-o", "--overwrite", help="Overwite existing files when downloading. The default is to only download missing files.",
