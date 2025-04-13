@@ -119,7 +119,7 @@ class GarminHrvMonitoringData(JsonFileProcessor):
                 hrv_value = hrv['hrvValue']
                 timestamp = hrv['readingTimeLocal']
                 point = {
-                    'timestamp': timestamp,
+                    'timestamp': datetime.datetime.fromisoformat(timestamp),
                     'hrv': hrv_value
                 }
                 MonitoringHrv.s_insert_or_update(self.garmin_db, point)
