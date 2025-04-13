@@ -204,6 +204,21 @@ class Hrv(GarminDb.Base, idbutils.DbObject):
     """Class representing a hrv entry."""
 
     __tablename__ = 'hrv'
+    
+    db = GarminDb
+    table_version = 1
+
+    day = Column(Date, primary_key=True)
+    hrv = Column(Float)
+
+    @classmethod
+    def get_stats(cls, session, start_ts, end_ts):
+        """Return a dictionary of aggregate statistics for the given time period."""
+        return {
+            'hrv_avg': cls.s_get_col_avg(session, cls.hrv, start_ts, end_ts, True),
+            'hrv_min': cls.s_get_col_min(session, cls.hrv, start_ts, end_ts, True),
+            'hrv_max': cls.s_get_col_max(session, cls.hrv, start_ts, end_ts)
+        }
 
 
 class Stress(GarminDb.Base, idbutils.DbObject):
