@@ -121,7 +121,7 @@ class GarminHrvMonitoringData(JsonFileProcessor):
                     'timestamp': timestamp,
                     'hrv': hrv_value
                 }
-                MonitoringHrv.insert_or_update(self.garmin_db, point)
+                MonitoringHrv.s_insert_or_update(self.garmin_db, point)
             return 1
         return 0
 
