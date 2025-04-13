@@ -108,21 +108,21 @@ class GarminHrvMonitoringData(JsonFileProcessor):
         """
         logger.info("Processing hrv monitoring data")
         super().__init__(r'hrv_monitoring_\d{4}-\d{2}-\d{2}\.json', input_dir=input_dir, latest=latest, debug=debug)
-        with MonitoringDb(db_params).managed_session() as self.garmin_db:
-            self.garmin_db = self.garmin_db 
+        self.garmin_db = MonitoringDb(db_params)
         self.conversions = {'calendarDate': self._parse_date}
 
     def _process_json(self, json_data):
         hrv_list = json_data['hrvReadings']
         if len(hrv_list) > 0:
-            for hrv in hrv_list:
-                hrv_value = hrv['hrvValue']
-                timestamp = hrv['readingTimeLocal']
-                point = {
-                    'timestamp': datetime.datetime.fromisoformat(timestamp),
-                    'hrv': hrv_value
-                }
-                MonitoringHrv.s_insert_or_update(self.garmin_db, point)
+            with self.garmin_db.managed_session() as self.garmin_mon_db:
+                for hrv in hrv_list:
+                    hrv_value = hrv['hrvValue']
+                    timestamp = hrv['readingTimeLocal']
+                    point = {
+                        'timestamp': datetime.datetime.fromisoformat(timestamp),
+                        'hrv': hrv_value
+                    }
+                    MonitoringHrv.s_insert_or_update(self.garmin_mon_db, point)
             return 1
         return 0
 
