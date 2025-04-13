@@ -82,8 +82,8 @@ class GarminHrvData(JsonFileProcessor):
         if len(hrv_list) > 0:
             hrv = hrv_list[0]
             point = {
-                'day': json_data['calendarDate'].date(),
-                'hrv': json_data['lastNightAvg'],
+                'day': hrv['calendarDate'].date(),
+                'hrv': hrv['lastNightAvg'],
                 'five_min_high_hrv': json_data['lastNight5MinHigh']
             }
             Hrv.insert_or_update(self.garmin_db, point)
