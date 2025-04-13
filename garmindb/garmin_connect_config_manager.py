@@ -153,6 +153,10 @@ class GarminConnectConfigManager(JsonConfig):
     def get_hrv_dir(self):
         """Return the configured directory of where the hrv files will be stored."""
         return self.__create_dir_if_needed(self.get_base_dir() + os.sep + 'HRV')
+    
+    def get_hrv_monitoring_dir(self):
+        """Return the configured directory of where the hrv monitoring files will be stored."""
+        return self.__create_dir_if_needed(self.get_base_dir() + os.sep + 'HRVMonitoring')
 
     def get_rhr_dir(self):
         """Return the configured directory of where the resting heart rate files will be stored."""
