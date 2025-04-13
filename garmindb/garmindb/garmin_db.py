@@ -200,6 +200,12 @@ class Weight(GarminDb.Base, idbutils.DbObject):
         }
 
 
+class Hrv(GarminDb.Base, idbutils.DbObject):
+    """Class representing a hrv entry."""
+
+    __tablename__ = 'hrv'
+
+
 class Stress(GarminDb.Base, idbutils.DbObject):
     """Class representing a stress reading."""
 

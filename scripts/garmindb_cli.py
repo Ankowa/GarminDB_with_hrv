@@ -20,13 +20,13 @@ import zipfile
 import glob
 
 from garmindb import python_version_check, log_version, format_version
-from garmindb.garmindb import GarminDb, Attributes, Sleep, Weight, RestingHeartRate, MonitoringDb, MonitoringHeartRate, ActivitiesDb, GarminSummaryDb
+from garmindb.garmindb import GarminDb, Attributes, Sleep, Weight, RestingHeartRate, MonitoringDb, MonitoringHeartRate, ActivitiesDb, GarminSummaryDb, Hrv
 from garmindb.summarydb import SummaryDb
 
 from garmindb import Download, Copy, Analyze
 from garmindb import FitFileProcessor, ActivityFitFileProcessor, MonitoringFitFileProcessor, SleepFitFileProcessor
 from garmindb import GarminUserSettings, GarminSocialProfile, GarminPersonalInformation, GarminWeightData, GarminSummaryData, GarminMonitoringFitData, GarminSleepFitData, \
-    GarminSleepData, GarminRhrData, GarminSettingsFitData, GarminHydrationData
+    GarminSleepData, GarminRhrData, GarminSettingsFitData, GarminHydrationData, GarminHrvData
 from garmindb import GarminJsonSummaryData, GarminJsonDetailsData, GarminTcxData, GarminActivitiesFitData
 from garmindb import ActivityExporter
 
@@ -52,6 +52,7 @@ stats_to_db_map = {
     Statistics.sleep                 : GarminDb,
     Statistics.rhr                   : GarminDb,
     Statistics.weight                : GarminDb,
+    Statistics.hrv                   : GarminDb,
     Statistics.activities            : ActivitiesDb
 }
 
@@ -149,6 +150,14 @@ def download_data(overwite, latest, stats):
             root_logger.info("Date range to update: %s (%d) to %s", date, days, weight_dir)
             download.get_weight(weight_dir, date, days, overwite)
             root_logger.info("Saved weight files for %s (%d) to %s for processing", date, days, weight_dir)
+    
+    if Statistics.hrv in stats:
+        date, days = __get_date_and_days(GarminDb(db_params_dict), latest, Hrv, Hrv.hrv, 'hrv')
+        if days > 0:
+            hrv_dir = gc_config.get_hrv_dir()
+            root_logger.info("Date range to update: %s (%d) to %s", date, days, hrv_dir)
+            download.get_hrv(hrv_dir, date, days, overwite)
+            root_logger.info("Saved hrv files for %s (%d) to %s for processing", date, days, hrv_dir)
 
     if Statistics.rhr in stats:
         date, days = __get_date_and_days(GarminDb(db_params_dict), latest, RestingHeartRate, RestingHeartRate.resting_heart_rate, 'rhr')
@@ -189,6 +198,12 @@ def import_data(debug, latest, stats):
         gwd = GarminWeightData(db_params_dict, weight_dir, latest, measurement_system, debug)
         if gwd.file_count() > 0:
             gwd.process()
+    
+    if Statistics.hrv in stats:
+        hrv_dir = gc_config.get_hrv_dir()
+        ghd = GarminHrvData(db_params_dict, hrv_dir, latest, debug)
+        if ghd.file_count() > 0:
+            ghd.process()
 
     monitoring_dir = gc_config.get_monitoring_base_dir()
     if Statistics.monitoring in stats:
@@ -315,6 +330,7 @@ def main(argv):
     stats_group.add_argument("-r", "--rhr", help="Download and/or import resting heart rate data.", dest='stats', action='append_const', const=Statistics.rhr)
     stats_group.add_argument("-s", "--sleep", help="Download and/or import sleep data.", dest='stats', action='append_const', const=Statistics.sleep)
     stats_group.add_argument("-w", "--weight", help="Download and/or import weight data.", dest='stats', action='append_const', const=Statistics.weight)
+    stats_group.add_argument("-h", "--hrv", help="Download and/or import hrv data.", dest='stats', action='append_const', const=Statistics.hrv)
     modifiers_group = parser.add_argument_group('Modifiers')
     modifiers_group.add_argument("-l", "--latest", help="Only download and/or import the latest data.", action="store_true", default=False)
     modifiers_group.add_argument("-o", "--overwrite", help="Overwite existing files when downloading. The default is to only download missing files.",
