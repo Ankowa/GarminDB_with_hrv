@@ -53,6 +53,7 @@ stats_to_db_map = {
     Statistics.rhr                   : GarminDb,
     Statistics.weight                : GarminDb,
     Statistics.hrv                   : GarminDb,
+    Statistics.hrv_monitoring        : MonitoringDb,
     Statistics.activities            : ActivitiesDb
 }
 
@@ -212,7 +213,7 @@ def import_data(debug, latest, stats):
         if ghd.file_count() > 0:
             ghd.process()
 
-    if Statistics.hrv in stats:
+    if Statistics.hrv_monitoring in stats:
         hrv_monitoring_dir = gc_config.get_hrv_monitoring_dir()
         ghd = GarminHrvMonitoringData(db_params_dict, hrv_monitoring_dir, latest, debug)
         if ghd.file_count() > 0:

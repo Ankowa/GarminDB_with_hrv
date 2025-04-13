@@ -13,7 +13,7 @@ import enum
 import fitfile
 from idbutils import JsonFileProcessor, Conversions
 
-from .garmindb import GarminDb, Attributes, Weight, Sleep, SleepEvents, RestingHeartRate, DailySummary, Hrv, MonitoringHrv
+from .garmindb import MonitoringDb, GarminDb, Attributes, Weight, Sleep, SleepEvents, RestingHeartRate, DailySummary, Hrv, MonitoringHrv
 from .fit_data import FitData
 
 
@@ -108,11 +108,11 @@ class GarminHrvMonitoringData(JsonFileProcessor):
         """
         logger.info("Processing hrv monitoring data")
         super().__init__(r'hrv_monitoring_\d{4}-\d{2}-\d{2}\.json', input_dir=input_dir, latest=latest, debug=debug)
-        self.garmin_db = GarminDb(db_params)
+        self.garmin_db = MonitoringDb(db_params).managed_session()
         self.conversions = {'calendarDate': self._parse_date}
 
     def _process_json(self, json_data):
-        hrv_list = json_data['hrvList']
+        hrv_list = json_data['hrvReadings']
         if len(hrv_list) > 0:
             for hrv in hrv_list:
                 hrv_value = hrv['hrvValue']
