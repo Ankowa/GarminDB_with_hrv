@@ -78,12 +78,13 @@ class GarminHrvData(JsonFileProcessor):
         self.conversions = {'calendarDate': self._parse_date}
 
     def _process_json(self, json_data):
-        hrv_list = json_data['hrvList']
+        hrv_list = json_data['hrvSummaries']
         if len(hrv_list) > 0:
             hrv = hrv_list[0]
             point = {
                 'day': json_data['calendarDate'].date(),
-                'hrv': hrv
+                'hrv': json_data['lastNightAvg'],
+                'five_min_high_hrv': json_data['lastNight5MinHigh']
             }
             Hrv.insert_or_update(self.garmin_db, point)
             return 1
@@ -113,12 +114,14 @@ class GarminHrvMonitoringData(JsonFileProcessor):
     def _process_json(self, json_data):
         hrv_list = json_data['hrvList']
         if len(hrv_list) > 0:
-            hrv = hrv_list[0]
-            point = {
-                'day': json_data['calendarDate'].date(),
-                'hrv': hrv
-            }
-            MonitoringHrv.insert_or_update(self.garmin_db, point)
+            for hrv in hrv_list:
+                hrv_value = hrv['hrvValue']
+                timestamp = hrv['readingTimeLocal']
+                point = {
+                    'timestamp': timestamp,
+                    'hrv': hrv_value
+                }
+                MonitoringHrv.insert_or_update(self.garmin_db, point)
             return 1
         return 0
 
