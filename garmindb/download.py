@@ -276,16 +276,28 @@ class Download():
             activity_name_str = conversions.printable(activity.get('activityName'))
             root_logger.info("get_activities: %s (%s)", activity_name_str, activity_id_str)
             json_filename = f'{directory}/activity_{activity_id_str}'
+            details_json_filename = f'{directory}/activity_details_{activity_id_str}'
+            fit_filename = f'{directory}/{activity_id_str}.fit'
+            downloaded = False
             if not os.path.isfile(json_filename + '.json') or overwite:
                 root_logger.info("get_activities: %s <- %r", json_filename, activity)
-                self.__save_activity_details(directory, activity_id_str, overwite)
                 self.save_json_to_file(json_filename, activity)
-                if not os.path.isfile(f'{directory}/{activity_id_str}.fit') or overwite:
-                    self.__save_activity_file(activity_id_str)
+                downloaded = True
+            else:
+                root_logger.info("get_activities: skipping summary JSON for %s, already present", activity_id_str)
+            if not os.path.isfile(details_json_filename + '.json') or overwite:
+                self.__save_activity_details(directory, activity_id_str, overwite)
+                downloaded = True
+            else:
+                root_logger.info("get_activities: skipping details JSON for %s, already present", activity_id_str)
+            if not os.path.isfile(fit_filename) or overwite:
+                self.__save_activity_file(activity_id_str)
+                downloaded = True
+            else:
+                root_logger.info("get_activities: skipping FIT file for %s, already present", activity_id_str)
+            if downloaded:
                 # pause for a second between every page access
                 time.sleep(1)
-            else:
-                root_logger.info("get_activities: skipping download of %s, already present", activity_id_str)
         self.__unzip_files(directory)
 
     def get_activity_types(self, directory, overwite):

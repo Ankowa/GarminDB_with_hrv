@@ -93,7 +93,7 @@ class TestActivitiesDb(TestDBBase, unittest.TestCase):
 
     def fit_file_import(self):
         self.profile_function('fit_activities_import', self.__fit_file_import)
-        self.check_db_tables_exists(self.test_mon_db, {'device_table' : Device})
+        self.check_db_tables_exists(self.test_mon_db, {'device_table' : Device}, 1 if self.gfd_file_count > 0 else 0)
         self.check_db_tables_exists(self.test_mon_db, {'file_table' : File, 'device_info_table' : DeviceInfo}, self.gfd_file_count)
 
     def summary_json_file_import(self):

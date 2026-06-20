@@ -17,7 +17,7 @@ import idbutils
 
 logger = logging.getLogger(__name__)
 
-ActivitiesDb = idbutils.DB.create('garmin_activities', 13, "Database for storing activities data.")
+ActivitiesDb = idbutils.DB.create('garmin_activities', 14, "Database for storing activities data.")
 
 
 class ActivitiesCommon(idbutils.DbObject):
@@ -274,6 +274,60 @@ class ActivityRecords(ActivitiesDb.Base, idbutils.DbObject):
     def position(self, location):
         self.position_lat = location.lat_deg
         self.position_long = location.long_deg
+
+
+class ActivityRecordFields(ActivitiesDb.Base, idbutils.DbObject):
+    """Normalized decoded FIT fields for each activity record."""
+
+    __tablename__ = 'activity_record_fields'
+
+    db = ActivitiesDb
+    table_version = 1
+
+    activity_id = Column(String, ForeignKey('activities.activity_id'))
+    record = Column(Integer)
+    timestamp = Column(DateTime)
+    field_name = Column(String)
+    field_value = Column(String)
+    field_units = Column(String)
+    field_raw_value = Column(String)
+
+    __table_args__ = (PrimaryKeyConstraint("activity_id", "record", "field_name"),)
+
+    @classmethod
+    def s_get(cls, session, activity_id, record, field_name, default=None):
+        """Return a single record field for the given id."""
+        instance = (
+            session.query(cls)
+            .filter(cls.activity_id == activity_id)
+            .filter(cls.record == record)
+            .filter(cls.field_name == field_name)
+            .scalar()
+        )
+        if instance is None:
+            return default
+        return instance
+
+    @classmethod
+    def s_get_from_dict(cls, session, values_dict):
+        """Return a single record field from a values dict."""
+        return cls.s_get(
+            session,
+            values_dict['activity_id'],
+            values_dict['record'],
+            values_dict['field_name'],
+        )
+
+    @classmethod
+    def s_get_activity(cls, session, activity_id):
+        """Return all record fields for a given activity_id."""
+        return session.query(cls).filter(cls.activity_id == activity_id).all()
+
+    @classmethod
+    def get_activity(cls, db, activity_id):
+        """Return all record fields for a given activity_id."""
+        with db.managed_session() as session:
+            return cls.s_get_activity(session, activity_id)
 
 
 class ActivitiesDevices(ActivitiesDb.Base, idbutils.DbObject):

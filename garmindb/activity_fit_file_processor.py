@@ -4,12 +4,14 @@ __author__ = "Tom Goetz"
 __copyright__ = "Copyright Tom Goetz"
 __license__ = "GPL"
 
+import datetime
+import json
 import logging
 import sys
 
 import fitfile
 
-from .garmindb import File, ActivitiesDb, Activities, ActivityRecords, ActivityLaps, ActivitiesDevices, StepsActivities, CycleActivities, PaddleActivities
+from .garmindb import File, ActivitiesDb, Activities, ActivityRecords, ActivityRecordFields, ActivityLaps, ActivitiesDevices, StepsActivities, CycleActivities, PaddleActivities
 from .fit_file_processor import FitFileProcessor
 
 
@@ -51,18 +53,90 @@ class ActivityFitFileProcessor(FitFileProcessor):
     def _write_record(self, fit_file, message_type, messages):
         """Write all record messages to the database."""
         for record_num, message in enumerate(messages):
-            self._write_record_entry(fit_file, message.fields, record_num)
+            self._write_record_entry(fit_file, message.fields, record_num, message.field_values)
 
-    def _write_record_entry(self, fit_file, message_fields, record_num):
+    @classmethod
+    def __record_field_scalar(cls, value):
+        if value is None:
+            return None
+        if hasattr(value, 'name'):
+            return value.name
+        if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+            return value.isoformat()
+        if isinstance(value, datetime.timedelta):
+            return str(value)
+        if isinstance(value, (bytes, bytearray)):
+            return value.hex()
+        if isinstance(value, (list, tuple)):
+            return [cls.__record_field_scalar(item) for item in value]
+        if isinstance(value, dict):
+            return {str(key): cls.__record_field_scalar(item) for key, item in value.items()}
+        if isinstance(value, (bool, int, float, str)):
+            return value
+        return str(value)
+
+    @classmethod
+    def __record_field_string(cls, value):
+        scalar = cls.__record_field_scalar(value)
+        if scalar is None:
+            return None
+        if isinstance(scalar, (list, dict)):
+            return json.dumps(scalar)
+        return str(scalar)
+
+    def __record_timestamp(self, fit_file, message_fields):
+        timestamp = message_fields.get('timestamp')
+        if timestamp is None:
+            return None
+        return fit_file.utc_datetime_to_local(timestamp)
+
+    def __record_field_names(self, activity_id, record_num):
+        return {
+            field_name
+            for (field_name,) in self.garmin_act_db_session.query(ActivityRecordFields.field_name)
+            .filter(ActivityRecordFields.activity_id == activity_id)
+            .filter(ActivityRecordFields.record == record_num)
+            .all()
+        }
+
+    def __write_record_fields(self, fit_file, activity_id, message_fields, record_num, message_field_values, check_existing):
+        if message_field_values is None:
+            return
+        timestamp = self.__record_timestamp(fit_file, message_fields)
+        existing_field_names = self.__record_field_names(activity_id, record_num) if check_existing else set()
+        record_fields = []
+        for field_value in message_field_values.values():
+            field_units = field_value.field.units
+            field_raw_value = self.__record_field_string(field_value.orig)
+            for field_name, value in field_value.items():
+                if field_name in existing_field_names:
+                    continue
+                existing_field_names.add(field_name)
+                record_field = {
+                    'activity_id'       : activity_id,
+                    'record'            : record_num,
+                    'timestamp'         : timestamp,
+                    'field_name'        : field_name,
+                    'field_value'       : self.__record_field_string(value),
+                    'field_units'       : field_units,
+                    'field_raw_value'   : field_raw_value,
+                }
+                record_fields.append(ActivityRecordFields(**record_field))
+        self.garmin_act_db_session.add_all(record_fields)
+
+    def _write_record_entry(self, fit_file, message_fields, record_num, message_field_values=None):
         # We don't get record data from multiple sources so we don't need to coellesce data in the DB.
         # It's fastest to just write the new data out if it doesn't currently exist.
         activity_id = File.id_from_path(fit_file.filename)
+        record_key = {'activity_id' : activity_id, 'record' : record_num}
         plugin_record = self._plugin_dispatch('write_record_entry', self.garmin_act_db_session, fit_file, activity_id, message_fields, record_num)
-        if not ActivityRecords.s_exists(self.garmin_act_db_session, {'activity_id' : activity_id, 'record' : record_num}):
+        record_exists = ActivityRecords.s_exists(self.garmin_act_db_session, record_key)
+        self.__write_record_fields(fit_file, activity_id, message_fields, record_num, message_field_values, record_exists)
+        if not record_exists:
             record = {
                 'activity_id'                       : activity_id,
                 'record'                            : record_num,
-                'timestamp'                         : fit_file.utc_datetime_to_local(message_fields.timestamp),
+                'timestamp'                         : self.__record_timestamp(fit_file, message_fields),
                 'position_lat'                      : message_fields.get('position_lat'),
                 'position_long'                     : message_fields.get('position_long'),
                 'distance'                          : message_fields.get('distance'),
